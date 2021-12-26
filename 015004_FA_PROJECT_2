@@ -1,0 +1,1327 @@
+{
+  "metadata": {
+    "kernelspec": {
+      "language": "python",
+      "display_name": "Python 3",
+      "name": "python3"
+    },
+    "language_info": {
+      "name": "python",
+      "version": "3.6.6",
+      "mimetype": "text/x-python",
+      "codemirror_mode": {
+        "name": "ipython",
+        "version": 3
+      },
+      "pygments_lexer": "ipython3",
+      "nbconvert_exporter": "python",
+      "file_extension": ".py"
+    },
+    "colab": {
+      "name": "015004_FA PROJECT 2 .ipynb",
+      "provenance": [],
+      "collapsed_sections": [
+        "tg8dK-FQ4i9l"
+      ]
+    }
+  },
+  "nbformat_minor": 0,
+  "nbformat": 4,
+  "cells": [
+    {
+      "cell_type": "markdown",
+      "source": [
+        "\n",
+        "#FA PROJECT 2 \n",
+        "\n",
+        "015004 - AYUSH JAIN\n",
+        "\n"
+      ],
+      "metadata": {
+        "id": "mAFvt6yI_ZeM"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Classify emotions in text with BERT NLP model "
+      ],
+      "metadata": {
+        "id": "e1VWDPHS4i84"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "Collection of documents and its emotions, It helps greatly in NLP Classification tasks"
+      ],
+      "metadata": {
+        "id": "3hcRE42ZA6vh"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# This Python 3 environment comes with many helpful analytics libraries installed\n",
+        "# It is defined by the kaggle/python docker image: https://github.com/kaggle/docker-python\n",
+        "# For example, here's several helpful packages to load in \n",
+        "\n",
+        "import numpy as np # linear algebra\n",
+        "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+        "\n",
+        "# Input data files are available in the \"../input/\" directory.\n",
+        "# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n",
+        "\n",
+        "import os\n",
+        "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+        "    for filename in filenames:\n",
+        "        print(os.path.join(dirname, filename))\n",
+        "\n",
+        "# Any results you write to the current directory are saved as output."
+      ],
+      "metadata": {
+        "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+        "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:25.322061Z",
+          "iopub.execute_input": "2021-11-28T00:37:25.322474Z",
+          "iopub.status.idle": "2021-11-28T00:37:25.332951Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:25.322441Z",
+          "shell.execute_reply": "2021-11-28T00:37:25.331814Z"
+        },
+        "trusted": true,
+        "id": "4IfwcfKO4i9A",
+        "outputId": "fe2f430c-0dce-4d13-82a9-604a34ae8dbf"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "name": "stdout",
+          "text": "/kaggle/input/emotions-dataset-for-nlp/val.txt\n/kaggle/input/emotions-dataset-for-nlp/test.txt\n/kaggle/input/emotions-dataset-for-nlp/train.txt\n",
+          "output_type": "stream"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!pip install transformers"
+      ],
+      "metadata": {
+        "_uuid": "d629ff2d2480ee46fbb7e2d37f6b5fab8052498a",
+        "_cell_guid": "79c7e3d0-c299-4dcb-8224-4455121ee9b0",
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:25.335456Z",
+          "iopub.execute_input": "2021-11-28T00:37:25.336137Z",
+          "iopub.status.idle": "2021-11-28T00:37:30.804336Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:25.336094Z",
+          "shell.execute_reply": "2021-11-28T00:37:30.803555Z"
+        },
+        "trusted": true,
+        "id": "wb83i-5r4i9G",
+        "outputId": "4b62dc04-1638-4536-8a05-6aa1441b8e42"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "name": "stdout",
+          "text": "Requirement already satisfied: transformers in /opt/conda/lib/python3.6/site-packages (2.7.0)\nRequirement already satisfied: regex!=2019.12.17 in /opt/conda/lib/python3.6/site-packages (from transformers) (2020.2.20)\nRequirement already satisfied: requests in /opt/conda/lib/python3.6/site-packages (from transformers) (2.22.0)\nRequirement already satisfied: sacremoses in /opt/conda/lib/python3.6/site-packages (from transformers) (0.0.38)\nRequirement already satisfied: dataclasses; python_version < \"3.7\" in /opt/conda/lib/python3.6/site-packages (from transformers) (0.7)\nRequirement already satisfied: numpy in /opt/conda/lib/python3.6/site-packages (from transformers) (1.18.2)\nRequirement already satisfied: tokenizers==0.5.2 in /opt/conda/lib/python3.6/site-packages (from transformers) (0.5.2)\nRequirement already satisfied: filelock in /opt/conda/lib/python3.6/site-packages (from transformers) (3.0.12)\nRequirement already satisfied: boto3 in /opt/conda/lib/python3.6/site-packages (from transformers) (1.12.32)\nRequirement already satisfied: tqdm>=4.27 in /opt/conda/lib/python3.6/site-packages (from transformers) (4.42.0)\nRequirement already satisfied: sentencepiece in /opt/conda/lib/python3.6/site-packages (from transformers) (0.1.85)\nRequirement already satisfied: certifi>=2017.4.17 in /opt/conda/lib/python3.6/site-packages (from requests->transformers) (2019.11.28)\nRequirement already satisfied: urllib3!=1.25.0,!=1.25.1,<1.26,>=1.21.1 in /opt/conda/lib/python3.6/site-packages (from requests->transformers) (1.24.3)\nRequirement already satisfied: chardet<3.1.0,>=3.0.2 in /opt/conda/lib/python3.6/site-packages (from requests->transformers) (3.0.4)\nRequirement already satisfied: idna<2.9,>=2.5 in /opt/conda/lib/python3.6/site-packages (from requests->transformers) (2.8)\nRequirement already satisfied: joblib in /opt/conda/lib/python3.6/site-packages (from sacremoses->transformers) (0.14.1)\nRequirement already satisfied: click in /opt/conda/lib/python3.6/site-packages (from sacremoses->transformers) (7.1.1)\nRequirement already satisfied: six in /opt/conda/lib/python3.6/site-packages (from sacremoses->transformers) (1.14.0)\nRequirement already satisfied: jmespath<1.0.0,>=0.7.1 in /opt/conda/lib/python3.6/site-packages (from boto3->transformers) (0.9.5)\nRequirement already satisfied: s3transfer<0.4.0,>=0.3.0 in /opt/conda/lib/python3.6/site-packages (from boto3->transformers) (0.3.3)\nRequirement already satisfied: botocore<1.16.0,>=1.15.32 in /opt/conda/lib/python3.6/site-packages (from boto3->transformers) (1.15.32)\nRequirement already satisfied: docutils<0.16,>=0.10 in /opt/conda/lib/python3.6/site-packages (from botocore<1.16.0,>=1.15.32->boto3->transformers) (0.15.2)\nRequirement already satisfied: python-dateutil<3.0.0,>=2.1 in /opt/conda/lib/python3.6/site-packages (from botocore<1.16.0,>=1.15.32->boto3->transformers) (2.8.1)\n",
+          "output_type": "stream"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import torch\n",
+        "from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler\n",
+        "import torch.nn.functional as F\n",
+        "from transformers import BertTokenizer, BertConfig,AdamW, BertForSequenceClassification,get_linear_schedule_with_warmup\n",
+        "\n",
+        "\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import seaborn as sns\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.metrics import confusion_matrix,classification_report\n",
+        "# Import and evaluate each test batch using Matthew's correlation coefficient\n",
+        "from sklearn.metrics import accuracy_score,matthews_corrcoef\n",
+        "\n",
+        "from tqdm import tqdm, trange,tnrange,tqdm_notebook\n",
+        "import random\n",
+        "import os\n",
+        "import io\n",
+        "%matplotlib inline"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:30.806866Z",
+          "iopub.execute_input": "2021-11-28T00:37:30.807103Z",
+          "iopub.status.idle": "2021-11-28T00:37:30.820988Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:30.807073Z",
+          "shell.execute_reply": "2021-11-28T00:37:30.820106Z"
+        },
+        "trusted": true,
+        "id": "YlveWZdm4i9H"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# identify and specify the GPU as the device, later in training loop we will load data into device\n",
+        "device = torch.device(\"cuda\" if torch.cuda.is_available() else \"cpu\")\n",
+        "n_gpu = torch.cuda.device_count()\n",
+        "torch.cuda.get_device_name(0)\n",
+        "\n",
+        "SEED = 19\n",
+        "\n",
+        "random.seed(SEED)\n",
+        "np.random.seed(SEED)\n",
+        "torch.manual_seed(SEED)\n",
+        "if device == torch.device(\"cuda\"):\n",
+        "    torch.cuda.manual_seed_all(SEED)"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:30.822302Z",
+          "iopub.execute_input": "2021-11-28T00:37:30.822580Z",
+          "iopub.status.idle": "2021-11-28T00:37:30.877094Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:30.822537Z",
+          "shell.execute_reply": "2021-11-28T00:37:30.876249Z"
+        },
+        "trusted": true,
+        "id": "DUlC08gT4i9J"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "device = torch.device(\"cuda\")"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:30.881574Z",
+          "iopub.execute_input": "2021-11-28T00:37:30.881999Z",
+          "iopub.status.idle": "2021-11-28T00:37:30.888454Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:30.881969Z",
+          "shell.execute_reply": "2021-11-28T00:37:30.887789Z"
+        },
+        "trusted": true,
+        "id": "h6OX4VbN4i9L"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "BertTokenizer to run end-to-end tokenization: punctuation splitting + word piece. \n",
+        "BertForSequenceClassification is the Bert Model transformer with a sequence classification/regression head on top (a linear layer on top of the pooled output). \n",
+        "BertConfig is the configuration class to store model configurations. \n",
+        "AdamW implements Adam learning rate optimization algorithm, it is a type of Stochastic Gradient Descent with momentum. Here momentum is described as the moving average of the gradient instead of gradient itself.\n",
+        "get_linear_schedule_with_warmup creates a schedule with a learning rate that decreases linearly after linearly increasing during a warm-up period."
+      ],
+      "metadata": {
+        "id": "BEmfzRNX4i9N"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df_train = pd.read_csv(\"/content/train.txt\", delimiter=';', header=None, names=['sentence','label'])\n",
+        "df_test = pd.read_csv(\"/content/test.txt\", delimiter=';', header=None, names=['sentence','label'])\n",
+        "df_val = pd.read_csv(\"/content/val.txt\", delimiter=';', header=None, names=['sentence','label'])"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:30.892546Z",
+          "iopub.execute_input": "2021-11-28T00:37:30.892794Z",
+          "iopub.status.idle": "2021-11-28T00:37:30.983604Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:30.892756Z",
+          "shell.execute_reply": "2021-11-28T00:37:30.982813Z"
+        },
+        "trusted": true,
+        "id": "KSBpjB694i9W"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df = pd.concat([df_train,df_test,df_val])"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:30.984987Z",
+          "iopub.execute_input": "2021-11-28T00:37:30.985266Z",
+          "iopub.status.idle": "2021-11-28T00:37:30.992052Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:30.985217Z",
+          "shell.execute_reply": "2021-11-28T00:37:30.991247Z"
+        },
+        "trusted": true,
+        "id": "0hFm19Ux4i9a"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df['label'].unique()"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:30.993496Z",
+          "iopub.execute_input": "2021-11-28T00:37:30.993984Z",
+          "iopub.status.idle": "2021-11-28T00:37:31.010077Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:30.993945Z",
+          "shell.execute_reply": "2021-11-28T00:37:31.009260Z"
+        },
+        "trusted": true,
+        "id": "uQSohB3C4i9d",
+        "outputId": "1d4254d6-2583-43f3-97e7-80b83dd2692a"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "execution_count": 13,
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": "array(['sadness', 'anger', 'love', 'surprise', 'fear', 'joy'],\n      dtype=object)"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.preprocessing import LabelEncoder\n",
+        "labelencoder = LabelEncoder()\n",
+        "df['label_enc'] = labelencoder.fit_transform(df['label'])"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:31.011232Z",
+          "iopub.execute_input": "2021-11-28T00:37:31.011784Z",
+          "iopub.status.idle": "2021-11-28T00:37:31.024402Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:31.011747Z",
+          "shell.execute_reply": "2021-11-28T00:37:31.023639Z"
+        },
+        "trusted": true,
+        "id": "bgkh0KRh4i9f"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df[['label','label_enc']].drop_duplicates(keep='first')"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:31.027114Z",
+          "iopub.execute_input": "2021-11-28T00:37:31.027546Z",
+          "iopub.status.idle": "2021-11-28T00:37:31.055035Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:31.027495Z",
+          "shell.execute_reply": "2021-11-28T00:37:31.054350Z"
+        },
+        "trusted": true,
+        "id": "3oW7EOMF4i9h",
+        "outputId": "c2bfd1db-7d79-4a81-e408-9dd370c76334"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "execution_count": 15,
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": "      label  label_enc\n0   sadness          4\n2     anger          0\n3      love          3\n6  surprise          5\n7      fear          1\n8       joy          2",
+            "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>label</th>\n      <th>label_enc</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>sadness</td>\n      <td>4</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>anger</td>\n      <td>0</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>love</td>\n      <td>3</td>\n    </tr>\n    <tr>\n      <th>6</th>\n      <td>surprise</td>\n      <td>5</td>\n    </tr>\n    <tr>\n      <th>7</th>\n      <td>fear</td>\n      <td>1</td>\n    </tr>\n    <tr>\n      <th>8</th>\n      <td>joy</td>\n      <td>2</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df.rename(columns={'label':'label_desc'},inplace=True)\n",
+        "df.rename(columns={'label_enc':'label'},inplace=True)"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:31.056329Z",
+          "iopub.execute_input": "2021-11-28T00:37:31.056869Z",
+          "iopub.status.idle": "2021-11-28T00:37:31.064346Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:31.056831Z",
+          "shell.execute_reply": "2021-11-28T00:37:31.063682Z"
+        },
+        "trusted": true,
+        "id": "F9uQ2nwJ4i9i"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "## create label and sentence list\n",
+        "sentences = df.sentence.values\n",
+        "\n",
+        "#check distribution of data based on labels\n",
+        "print(\"Distribution of data based on labels: \",df.label.value_counts())\n",
+        "\n",
+        "# Set the maximum sequence length. The longest sequence in our training set is 47, but we'll leave room on the end anyway. \n",
+        "# In the original paper, the authors used a length of 512.\n",
+        "MAX_LEN = 256\n",
+        "\n",
+        "## Import BERT tokenizer, that is used to convert our text into tokens that corresponds to BERT library\n",
+        "tokenizer = BertTokenizer.from_pretrained('bert-base-uncased',do_lower_case=True)\n",
+        "input_ids = [tokenizer.encode(sent, add_special_tokens=True,max_length=MAX_LEN,pad_to_max_length=True) for sent in sentences]\n",
+        "labels = df.label.values\n",
+        "\n",
+        "print(\"Actual sentence before tokenization: \",sentences[2])\n",
+        "print(\"Encoded Input from dataset: \",input_ids[2])\n",
+        "\n",
+        "## Create attention mask\n",
+        "attention_masks = []\n",
+        "## Create a mask of 1 for all input tokens and 0 for all padding tokens\n",
+        "attention_masks = [[float(i>0) for i in seq] for seq in input_ids]\n",
+        "print(attention_masks[2])"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:31.066015Z",
+          "iopub.execute_input": "2021-11-28T00:37:31.066574Z",
+          "iopub.status.idle": "2021-11-28T00:37:46.603554Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:31.066525Z",
+          "shell.execute_reply": "2021-11-28T00:37:46.601911Z"
+        },
+        "trusted": true,
+        "colab": {
+          "referenced_widgets": [
+            "700dc39e263642b8b6355f9c56c16ec8"
+          ]
+        },
+        "id": "ERJ-rn1U4i9j",
+        "outputId": "9a530ea0-fb4f-4ed2-ddd7-dafd99e362af"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "name": "stdout",
+          "text": "Distribution of data based on labels:  2    6761\n4    5797\n0    2709\n1    2373\n3    1641\n5     719\nName: label, dtype: int64\n",
+          "output_type": "stream"
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": "HBox(children=(FloatProgress(value=0.0, description='Downloading', max=231508.0, style=ProgressStyle(descripti…",
+            "application/vnd.jupyter.widget-view+json": {
+              "version_major": 2,
+              "version_minor": 0,
+              "model_id": "700dc39e263642b8b6355f9c56c16ec8"
+            }
+          },
+          "metadata": {}
+        },
+        {
+          "name": "stdout",
+          "text": "\nActual sentence before tokenization:  im grabbing a minute to post i feel greedy wrong\nEncoded Input from dataset:  [101, 10047, 9775, 1037, 3371, 2000, 2695, 1045, 2514, 20505, 3308, 102, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]\n[1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]\n",
+          "output_type": "stream"
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "## Dataset Prep for training"
+      ],
+      "metadata": {
+        "id": "LCVJfQbU4i9k"
+      }
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "#### Split into a training set and a test set using a stratified k fold"
+      ],
+      "metadata": {
+        "id": "tg8dK-FQ4i9l"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "train_inputs,validation_inputs,train_labels,validation_labels = train_test_split(input_ids,labels,random_state=41,test_size=0.1)\n",
+        "train_masks,validation_masks,_,_ = train_test_split(attention_masks,input_ids,random_state=41,test_size=0.1)"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:46.606909Z",
+          "iopub.execute_input": "2021-11-28T00:37:46.607137Z",
+          "iopub.status.idle": "2021-11-28T00:37:46.635589Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:46.607106Z",
+          "shell.execute_reply": "2021-11-28T00:37:46.634864Z"
+        },
+        "trusted": true,
+        "id": "C4o78_B24i9m"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# convert all our data into torch tensors, required data type for our model\n",
+        "train_inputs = torch.tensor(train_inputs)\n",
+        "validation_inputs = torch.tensor(validation_inputs)\n",
+        "train_labels = torch.tensor(train_labels)\n",
+        "validation_labels = torch.tensor(validation_labels)\n",
+        "train_masks = torch.tensor(train_masks)\n",
+        "validation_masks = torch.tensor(validation_masks)\n",
+        "\n",
+        "# Select a batch size for training. For fine-tuning BERT on a specific task, the authors recommend a batch size of 16 or 32\n",
+        "batch_size = 32\n",
+        "\n",
+        "# Create an iterator of our data with torch DataLoader. This helps save on memory during training because, unlike a for loop, \n",
+        "# with an iterator the entire dataset does not need to be loaded into memory\n",
+        "train_data = TensorDataset(train_inputs,train_masks,train_labels)\n",
+        "train_sampler = RandomSampler(train_data)\n",
+        "train_dataloader = DataLoader(train_data,sampler=train_sampler,batch_size=batch_size)\n",
+        "\n",
+        "validation_data = TensorDataset(validation_inputs,validation_masks,validation_labels)\n",
+        "validation_sampler = RandomSampler(validation_data)\n",
+        "validation_dataloader = DataLoader(validation_data,sampler=validation_sampler,batch_size=batch_size)"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:46.637186Z",
+          "iopub.execute_input": "2021-11-28T00:37:46.637499Z",
+          "iopub.status.idle": "2021-11-28T00:37:47.229383Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:46.637464Z",
+          "shell.execute_reply": "2021-11-28T00:37:47.228714Z"
+        },
+        "trusted": true,
+        "id": "c26o1UYG4i9n"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "### Lets see whats there in traindata set "
+      ],
+      "metadata": {
+        "id": "KiHGHBj34i9o"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "train_data[0]"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:47.231679Z",
+          "iopub.execute_input": "2021-11-28T00:37:47.232129Z",
+          "iopub.status.idle": "2021-11-28T00:37:47.294352Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:47.232091Z",
+          "shell.execute_reply": "2021-11-28T00:37:47.293692Z"
+        },
+        "trusted": true,
+        "id": "EVu15vEk4i9o",
+        "outputId": "00a4f1b8-e30b-4038-919e-6c8953c41adf"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "execution_count": 20,
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": "(tensor([ 101, 1045, 2123, 1056, 2514, 2061, 9069, 2035, 1996, 2051,  102,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,    0,\n            0,    0,    0,    0]),\n tensor([1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 1., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,\n         0., 0., 0., 0.]),\n tensor(4))"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "type(train_dataloader)"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:47.295595Z",
+          "iopub.execute_input": "2021-11-28T00:37:47.295899Z",
+          "iopub.status.idle": "2021-11-28T00:37:47.301071Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:47.295850Z",
+          "shell.execute_reply": "2021-11-28T00:37:47.300217Z"
+        },
+        "trusted": true,
+        "id": "BYtsyHxm4i9p",
+        "outputId": "796f8e5c-9aa7-44dd-f2b6-c2d7edfc1257"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "execution_count": 21,
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": "torch.utils.data.dataloader.DataLoader"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "# Load BertForSequenceClassification, the pretrained BERT model with a single linear classification layer on top. \n",
+        "model = BertForSequenceClassification.from_pretrained(\"bert-base-uncased\", num_labels=6).to(device)\n",
+        "\n",
+        "# Parameters:\n",
+        "lr = 2e-5\n",
+        "adam_epsilon = 1e-8\n",
+        "\n",
+        "# Number of training epochs (authors recommend between 2 and 4)\n",
+        "epochs = 3\n",
+        "\n",
+        "num_warmup_steps = 0\n",
+        "num_training_steps = len(train_dataloader)*epochs\n",
+        "\n",
+        "### In Transformers, optimizer and schedules are splitted and instantiated like this:\n",
+        "optimizer = AdamW(model.parameters(), lr=lr,eps=adam_epsilon,correct_bias=False)  # To reproduce BertAdam specific behavior set correct_bias=False\n",
+        "scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=num_warmup_steps, num_training_steps=num_training_steps)  # PyTorch scheduler"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:37:47.302788Z",
+          "iopub.execute_input": "2021-11-28T00:37:47.303339Z",
+          "iopub.status.idle": "2021-11-28T00:38:10.203410Z",
+          "shell.execute_reply.started": "2021-11-28T00:37:47.303300Z",
+          "shell.execute_reply": "2021-11-28T00:38:10.202689Z"
+        },
+        "trusted": true,
+        "colab": {
+          "referenced_widgets": [
+            "32c3daabe4a84c678786a502c4185ce6",
+            "12dbfe04c66342278b5aad397e426ce2"
+          ]
+        },
+        "id": "j8xuPVNi4i9q",
+        "outputId": "e8fc4bea-ee8a-4ef1-f99a-5d8e1cdf7b28"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": "HBox(children=(FloatProgress(value=0.0, description='Downloading', max=433.0, style=ProgressStyle(description_…",
+            "application/vnd.jupyter.widget-view+json": {
+              "version_major": 2,
+              "version_minor": 0,
+              "model_id": "32c3daabe4a84c678786a502c4185ce6"
+            }
+          },
+          "metadata": {}
+        },
+        {
+          "name": "stdout",
+          "text": "\n",
+          "output_type": "stream"
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": "HBox(children=(FloatProgress(value=0.0, description='Downloading', max=440473133.0, style=ProgressStyle(descri…",
+            "application/vnd.jupyter.widget-view+json": {
+              "version_major": 2,
+              "version_minor": 0,
+              "model_id": "12dbfe04c66342278b5aad397e426ce2"
+            }
+          },
+          "metadata": {}
+        },
+        {
+          "name": "stdout",
+          "text": "\n",
+          "output_type": "stream"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "## Store our loss and accuracy for plotting\n",
+        "train_loss_set = []\n",
+        "learning_rate = []\n",
+        "\n",
+        "# Gradients gets accumulated by default\n",
+        "model.zero_grad()\n",
+        "\n",
+        "# tnrange is a tqdm wrapper around the normal python range\n",
+        "for _ in tnrange(1,epochs+1,desc='Epoch'):\n",
+        "  print(\"<\" + \"=\"*22 + F\" Epoch {_} \"+ \"=\"*22 + \">\")\n",
+        "  # Calculate total loss for this epoch\n",
+        "  batch_loss = 0\n",
+        "\n",
+        "  for step, batch in enumerate(train_dataloader):\n",
+        "    # Set our model to training mode (as opposed to evaluation mode)\n",
+        "    model.train()\n",
+        "    \n",
+        "    # Add batch to GPU\n",
+        "    batch = tuple(t.to(device) for t in batch)\n",
+        "    # Unpack the inputs from our dataloader\n",
+        "    b_input_ids, b_input_mask, b_labels = batch\n",
+        "\n",
+        "    # Forward pass\n",
+        "    outputs = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)\n",
+        "    loss = outputs[0]\n",
+        "    \n",
+        "    # Backward pass\n",
+        "    loss.backward()\n",
+        "    \n",
+        "    # Clip the norm of the gradients to 1.0\n",
+        "    # Gradient clipping is not in AdamW anymore\n",
+        "    torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)\n",
+        "    \n",
+        "    # Update parameters and take a step using the computed gradient\n",
+        "    optimizer.step()\n",
+        "    \n",
+        "    # Update learning rate schedule\n",
+        "    scheduler.step()\n",
+        "\n",
+        "    # Clear the previous accumulated gradients\n",
+        "    optimizer.zero_grad()\n",
+        "    \n",
+        "    # Update tracking variables\n",
+        "    batch_loss += loss.item()\n",
+        "\n",
+        "  # Calculate the average loss over the training data.\n",
+        "  avg_train_loss = batch_loss / len(train_dataloader)\n",
+        "\n",
+        "  #store the current learning rate\n",
+        "  for param_group in optimizer.param_groups:\n",
+        "    print(\"\\n\\tCurrent Learning rate: \",param_group['lr'])\n",
+        "    learning_rate.append(param_group['lr'])\n",
+        "    \n",
+        "  train_loss_set.append(avg_train_loss)\n",
+        "  print(F'\\n\\tAverage Training loss: {avg_train_loss}')\n",
+        "    \n",
+        "  # Validation\n",
+        "\n",
+        "  # Put model in evaluation mode to evaluate loss on the validation set\n",
+        "  model.eval()\n",
+        "\n",
+        "  # Tracking variables \n",
+        "  eval_accuracy,eval_mcc_accuracy,nb_eval_steps = 0, 0, 0\n",
+        "\n",
+        "  # Evaluate data for one epoch\n",
+        "  for batch in validation_dataloader:\n",
+        "    # Add batch to GPU\n",
+        "    batch = tuple(t.to(device) for t in batch)\n",
+        "    # Unpack the inputs from our dataloader\n",
+        "    b_input_ids, b_input_mask, b_labels = batch\n",
+        "    # Telling the model not to compute or store gradients, saving memory and speeding up validation\n",
+        "    with torch.no_grad():\n",
+        "      # Forward pass, calculate logit predictions\n",
+        "      logits = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask)\n",
+        "    \n",
+        "    # Move logits and labels to CPU\n",
+        "    logits = logits[0].to('cpu').numpy()\n",
+        "    label_ids = b_labels.to('cpu').numpy()\n",
+        "\n",
+        "    pred_flat = np.argmax(logits, axis=1).flatten()\n",
+        "    labels_flat = label_ids.flatten()\n",
+        "    \n",
+        "    df_metrics=pd.DataFrame({'Epoch':epochs,'Actual_class':labels_flat,'Predicted_class':pred_flat})\n",
+        "    \n",
+        "    tmp_eval_accuracy = accuracy_score(labels_flat,pred_flat)\n",
+        "    tmp_eval_mcc_accuracy = matthews_corrcoef(labels_flat, pred_flat)\n",
+        "    \n",
+        "    eval_accuracy += tmp_eval_accuracy\n",
+        "    eval_mcc_accuracy += tmp_eval_mcc_accuracy\n",
+        "    nb_eval_steps += 1\n",
+        "\n",
+        "  print(F'\\n\\tValidation Accuracy: {eval_accuracy/nb_eval_steps}')\n",
+        "  print(F'\\n\\tValidation MCC Accuracy: {eval_mcc_accuracy/nb_eval_steps}')"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T00:38:10.206704Z",
+          "iopub.execute_input": "2021-11-28T00:38:10.206965Z",
+          "iopub.status.idle": "2021-11-28T01:00:16.333371Z",
+          "shell.execute_reply.started": "2021-11-28T00:38:10.206938Z",
+          "shell.execute_reply": "2021-11-28T01:00:16.332612Z"
+        },
+        "trusted": true,
+        "colab": {
+          "referenced_widgets": [
+            "c430a240c7c74e029d5168d78a2e4662"
+          ]
+        },
+        "id": "3P-k-RpL4i9r",
+        "outputId": "408d433b-c769-4fa4-e2fc-bb970a1453aa"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "name": "stderr",
+          "text": "/opt/conda/lib/python3.6/site-packages/ipykernel_launcher.py:9: TqdmDeprecationWarning: Please use `tqdm.notebook.trange` instead of `tqdm.tnrange`\n  if __name__ == '__main__':\n",
+          "output_type": "stream"
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": "HBox(children=(FloatProgress(value=0.0, description='Epoch', max=3.0, style=ProgressStyle(description_width='i…",
+            "application/vnd.jupyter.widget-view+json": {
+              "version_major": 2,
+              "version_minor": 0,
+              "model_id": "c430a240c7c74e029d5168d78a2e4662"
+            }
+          },
+          "metadata": {}
+        },
+        {
+          "name": "stdout",
+          "text": "<====================== Epoch 1 ======================>\n\n\tCurrent Learning rate:  1.3333333333333333e-05\n\n\tAverage Training loss: 0.39324043376195916\n\n\tValidation Accuracy: 0.933531746031746\n\n\tValidation MCC Accuracy: 0.9128122385092313\n<====================== Epoch 2 ======================>\n\n\tCurrent Learning rate:  6.666666666666667e-06\n\n\tAverage Training loss: 0.11971633532622145\n\n\tValidation Accuracy: 0.933531746031746\n\n\tValidation MCC Accuracy: 0.9137053098662156\n<====================== Epoch 3 ======================>\n\n\tCurrent Learning rate:  0.0\n\n\tAverage Training loss: 0.07834963053200215\n\n\tValidation Accuracy: 0.9295634920634921\n\n\tValidation MCC Accuracy: 0.9078353813516075\n\n",
+          "output_type": "stream"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from sklearn.metrics import confusion_matrix,classification_report\n",
+        "def plot_confusion_matrix(cm, classes,\n",
+        "                          normalize=False,\n",
+        "                          title='Confusion matrix',\n",
+        "                          cmap=plt.cm.Blues):\n",
+        "    \"\"\"\n",
+        "    This function prints and plots the confusion matrix.\n",
+        "    Normalization can be applied by setting `normalize=True`.\n",
+        "    \"\"\"\n",
+        "    import itertools\n",
+        "    if normalize:\n",
+        "        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]\n",
+        "        print(\"Normalized confusion matrix\")\n",
+        "    else:\n",
+        "        print('Confusion matrix, without normalization')\n",
+        "\n",
+        "    print(cm)\n",
+        "\n",
+        "    plt.imshow(cm, interpolation='nearest', cmap=cmap)\n",
+        "    plt.title(title)\n",
+        "    plt.colorbar()\n",
+        "    tick_marks = np.arange(len(classes))\n",
+        "    plt.xticks(tick_marks, classes, rotation=45)\n",
+        "    plt.yticks(tick_marks, classes)\n",
+        "\n",
+        "    fmt = '.2f' if normalize else 'd'\n",
+        "    thresh = cm.max() / 2.\n",
+        "    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):\n",
+        "        plt.text(j, i, format(cm[i, j], fmt),\n",
+        "                 horizontalalignment=\"center\",\n",
+        "                 color=\"white\" if cm[i, j] > thresh else \"black\")\n",
+        "\n",
+        "    plt.ylabel('True label')\n",
+        "    plt.xlabel('Predicted label')\n",
+        "    plt.tight_layout()"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T01:00:16.334811Z",
+          "iopub.execute_input": "2021-11-28T01:00:16.335286Z",
+          "iopub.status.idle": "2021-11-28T01:00:16.349002Z",
+          "shell.execute_reply.started": "2021-11-28T01:00:16.335248Z",
+          "shell.execute_reply": "2021-11-28T01:00:16.348229Z"
+        },
+        "trusted": true,
+        "id": "Z5MEirYO4i9t"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "df[['label','label_desc']].drop_duplicates(keep='first')"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T01:00:16.350272Z",
+          "iopub.execute_input": "2021-11-28T01:00:16.350670Z",
+          "iopub.status.idle": "2021-11-28T01:00:16.377112Z",
+          "shell.execute_reply.started": "2021-11-28T01:00:16.350630Z",
+          "shell.execute_reply": "2021-11-28T01:00:16.376322Z"
+        },
+        "trusted": true,
+        "id": "erF42RvU4i9u",
+        "outputId": "fa81be00-a194-4e93-de9f-497745aff9dd"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "execution_count": 25,
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": "   label label_desc\n0      4    sadness\n2      0      anger\n3      3       love\n6      5   surprise\n7      1       fear\n8      2        joy",
+            "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>label</th>\n      <th>label_desc</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>4</td>\n      <td>sadness</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>0</td>\n      <td>anger</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>3</td>\n      <td>love</td>\n    </tr>\n    <tr>\n      <th>6</th>\n      <td>5</td>\n      <td>surprise</td>\n    </tr>\n    <tr>\n      <th>7</th>\n      <td>1</td>\n      <td>fear</td>\n    </tr>\n    <tr>\n      <th>8</th>\n      <td>2</td>\n      <td>joy</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "## emotion labels\n",
+        "label2int = {\n",
+        "  \"sadness\": 4,\n",
+        "  \"joy\": 2,\n",
+        "  \"anger\": 0,\n",
+        "  \"fear\": 1,\n",
+        "  \"surprise\": 5,\n",
+        "  \"love\": 3\n",
+        "}"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T01:01:04.948177Z",
+          "iopub.execute_input": "2021-11-28T01:01:04.948454Z",
+          "iopub.status.idle": "2021-11-28T01:01:04.953720Z",
+          "shell.execute_reply.started": "2021-11-28T01:01:04.948424Z",
+          "shell.execute_reply": "2021-11-28T01:01:04.952768Z"
+        },
+        "trusted": true,
+        "id": "cFGODD024i9v"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        " df_metrics"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T01:01:33.717703Z",
+          "iopub.execute_input": "2021-11-28T01:01:33.718016Z",
+          "iopub.status.idle": "2021-11-28T01:01:33.727324Z",
+          "shell.execute_reply.started": "2021-11-28T01:01:33.717989Z",
+          "shell.execute_reply": "2021-11-28T01:01:33.726575Z"
+        },
+        "trusted": true,
+        "id": "eKdXJnrk4i9w",
+        "outputId": "75de41eb-0ab5-4ba8-b469-e51515a9c6b0"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "execution_count": 35,
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": "    Epoch  Actual_class  Predicted_class\n0       3             4                4\n1       3             1                4\n2       3             2                2\n3       3             0                0\n4       3             2                2\n5       3             1                1\n6       3             5                5\n7       3             2                2\n8       3             4                4\n9       3             0                0\n10      3             2                2\n11      3             2                2\n12      3             4                4\n13      3             0                0\n14      3             4                4\n15      3             4                4",
+            "text/html": "<div>\n<style scoped>\n    .dataframe tbody tr th:only-of-type {\n        vertical-align: middle;\n    }\n\n    .dataframe tbody tr th {\n        vertical-align: top;\n    }\n\n    .dataframe thead th {\n        text-align: right;\n    }\n</style>\n<table border=\"1\" class=\"dataframe\">\n  <thead>\n    <tr style=\"text-align: right;\">\n      <th></th>\n      <th>Epoch</th>\n      <th>Actual_class</th>\n      <th>Predicted_class</th>\n    </tr>\n  </thead>\n  <tbody>\n    <tr>\n      <th>0</th>\n      <td>3</td>\n      <td>4</td>\n      <td>4</td>\n    </tr>\n    <tr>\n      <th>1</th>\n      <td>3</td>\n      <td>1</td>\n      <td>4</td>\n    </tr>\n    <tr>\n      <th>2</th>\n      <td>3</td>\n      <td>2</td>\n      <td>2</td>\n    </tr>\n    <tr>\n      <th>3</th>\n      <td>3</td>\n      <td>0</td>\n      <td>0</td>\n    </tr>\n    <tr>\n      <th>4</th>\n      <td>3</td>\n      <td>2</td>\n      <td>2</td>\n    </tr>\n    <tr>\n      <th>5</th>\n      <td>3</td>\n      <td>1</td>\n      <td>1</td>\n    </tr>\n    <tr>\n      <th>6</th>\n      <td>3</td>\n      <td>5</td>\n      <td>5</td>\n    </tr>\n    <tr>\n      <th>7</th>\n      <td>3</td>\n      <td>2</td>\n      <td>2</td>\n    </tr>\n    <tr>\n      <th>8</th>\n      <td>3</td>\n      <td>4</td>\n      <td>4</td>\n    </tr>\n    <tr>\n      <th>9</th>\n      <td>3</td>\n      <td>0</td>\n      <td>0</td>\n    </tr>\n    <tr>\n      <th>10</th>\n      <td>3</td>\n      <td>2</td>\n      <td>2</td>\n    </tr>\n    <tr>\n      <th>11</th>\n      <td>3</td>\n      <td>2</td>\n      <td>2</td>\n    </tr>\n    <tr>\n      <th>12</th>\n      <td>3</td>\n      <td>4</td>\n      <td>4</td>\n    </tr>\n    <tr>\n      <th>13</th>\n      <td>3</td>\n      <td>0</td>\n      <td>0</td>\n    </tr>\n    <tr>\n      <th>14</th>\n      <td>3</td>\n      <td>4</td>\n      <td>4</td>\n    </tr>\n    <tr>\n      <th>15</th>\n      <td>3</td>\n      <td>4</td>\n      <td>4</td>\n    </tr>\n  </tbody>\n</table>\n</div>"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "print(classification_report(df_metrics['Actual_class'].values, df_metrics['Predicted_class'].values, target_names=label2int.keys(), digits=len(label2int)))"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T01:00:16.396049Z",
+          "iopub.execute_input": "2021-11-28T01:00:16.396667Z",
+          "iopub.status.idle": "2021-11-28T01:00:16.408225Z",
+          "shell.execute_reply.started": "2021-11-28T01:00:16.396631Z",
+          "shell.execute_reply": "2021-11-28T01:00:16.407343Z"
+        },
+        "trusted": true,
+        "id": "GTfkZJBz4i9w",
+        "outputId": "e8780351-c0eb-4b9d-ec36-69bf6a5d8c1e"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "name": "stdout",
+          "text": "              precision    recall  f1-score   support\n\n     sadness    1.00000   1.00000   1.00000         3\n         joy    1.00000   0.50000   0.66667         2\n       anger    1.00000   1.00000   1.00000         5\n        fear    0.83333   1.00000   0.90909         5\n    surprise    1.00000   1.00000   1.00000         1\n\n    accuracy                        0.93750        16\n   macro avg    0.96667   0.90000   0.91515        16\nweighted avg    0.94792   0.93750   0.92992        16\n\n",
+          "output_type": "stream"
+        }
+      ]
+    },
+    {
+      "cell_type": "markdown",
+      "source": [
+        "# Save the models for future use "
+      ],
+      "metadata": {
+        "id": "1oWD7top4i9x"
+      }
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "model_save_folder = 'model/'\n",
+        "tokenizer_save_folder = 'tokenizer/'\n",
+        "\n",
+        "path_model = F'/kaggle/working/{model_save_folder}'\n",
+        "path_tokenizer = F'/kaggle/working/{tokenizer_save_folder}'\n",
+        "\n",
+        "#create the dir\n",
+        "\n",
+        "!mkdir -p {path_model}\n",
+        "!mkdir -p {path_tokenizer}\n",
+        "\n",
+        "## Now let's save our model and tokenizer to a directory\n",
+        "model.save_pretrained(path_model)\n",
+        "tokenizer.save_pretrained(path_tokenizer)\n",
+        "\n",
+        "model_save_name = 'fineTuneModel.pt'\n",
+        "path = path_model = F'/kaggle/working/{model_save_folder}/{model_save_name}'\n",
+        "torch.save(model.state_dict(),path);"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T01:03:15.241704Z",
+          "iopub.execute_input": "2021-11-28T01:03:15.242023Z",
+          "iopub.status.idle": "2021-11-28T01:03:17.659688Z",
+          "shell.execute_reply.started": "2021-11-28T01:03:15.241992Z",
+          "shell.execute_reply": "2021-11-28T01:03:17.658850Z"
+        },
+        "trusted": true,
+        "id": "5pj0ym_b4i9x"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "model_save_name = 'fineTuneModel.bin'\n",
+        "path = path_model = F'/kaggle/working/{model_save_name}'\n",
+        "torch.save(model.state_dict(),path);"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T01:15:57.144192Z",
+          "iopub.execute_input": "2021-11-28T01:15:57.144469Z",
+          "iopub.status.idle": "2021-11-28T01:15:57.662998Z",
+          "shell.execute_reply.started": "2021-11-28T01:15:57.144441Z",
+          "shell.execute_reply": "2021-11-28T01:15:57.662273Z"
+        },
+        "trusted": true,
+        "id": "K0Ik1Ebj4i9y"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "import torch\n",
+        "from torch.utils.data import TensorDataset, DataLoader, RandomSampler, SequentialSampler\n",
+        "import torch.nn.functional as F\n",
+        "from transformers import BertTokenizer, BertConfig,AdamW, BertForSequenceClassification,get_linear_schedule_with_warmup\n",
+        "\n",
+        "\n",
+        "import pandas as pd\n",
+        "import numpy as np\n",
+        "import seaborn as sns\n",
+        "import matplotlib.pyplot as plt\n",
+        "\n",
+        "from sklearn.model_selection import train_test_split\n",
+        "from sklearn.metrics import confusion_matrix,classification_report\n",
+        "# Import and evaluate each test batch using Matthew's correlation coefficient\n",
+        "from sklearn.metrics import accuracy_score,matthews_corrcoef\n",
+        "\n",
+        "from tqdm import tqdm, trange,tnrange,tqdm_notebook\n",
+        "import random\n",
+        "import os\n",
+        "import io\n",
+        "%matplotlib inline"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T02:00:46.352213Z",
+          "iopub.execute_input": "2021-11-28T02:00:46.352515Z",
+          "iopub.status.idle": "2021-11-28T02:00:46.366062Z",
+          "shell.execute_reply.started": "2021-11-28T02:00:46.352484Z",
+          "shell.execute_reply": "2021-11-28T02:00:46.364050Z"
+        },
+        "trusted": true,
+        "id": "RPwFHxPh4i9y"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "!pip install transformers==3.0.2"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T02:00:55.410436Z",
+          "iopub.execute_input": "2021-11-28T02:00:55.410712Z",
+          "iopub.status.idle": "2021-11-28T02:01:01.313531Z",
+          "shell.execute_reply.started": "2021-11-28T02:00:55.410683Z",
+          "shell.execute_reply": "2021-11-28T02:01:01.312777Z"
+        },
+        "trusted": true,
+        "id": "MX3LIIJ64i9z",
+        "outputId": "2d6af710-d805-4d5a-8328-cac967840468"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "name": "stdout",
+          "text": "Requirement already satisfied: transformers==3.0.2 in /opt/conda/lib/python3.6/site-packages (3.0.2)\nRequirement already satisfied: packaging in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (20.3)\nRequirement already satisfied: requests in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (2.22.0)\nRequirement already satisfied: tokenizers==0.8.1.rc1 in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (0.8.1rc1)\nRequirement already satisfied: sentencepiece!=0.1.92 in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (0.1.85)\nRequirement already satisfied: tqdm>=4.27 in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (4.42.0)\nRequirement already satisfied: dataclasses; python_version < \"3.7\" in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (0.7)\nRequirement already satisfied: numpy in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (1.18.2)\nRequirement already satisfied: regex!=2019.12.17 in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (2020.2.20)\nRequirement already satisfied: filelock in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (3.0.12)\nRequirement already satisfied: sacremoses in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (0.0.38)\nRequirement already satisfied: six in /opt/conda/lib/python3.6/site-packages (from packaging->transformers==3.0.2) (1.14.0)\nRequirement already satisfied: pyparsing>=2.0.2 in /opt/conda/lib/python3.6/site-packages (from packaging->transformers==3.0.2) (2.4.6)\nRequirement already satisfied: idna<2.9,>=2.5 in /opt/conda/lib/python3.6/site-packages (from requests->transformers==3.0.2) (2.8)\nRequirement already satisfied: urllib3!=1.25.0,!=1.25.1,<1.26,>=1.21.1 in /opt/conda/lib/python3.6/site-packages (from requests->transformers==3.0.2) (1.24.3)\nRequirement already satisfied: certifi>=2017.4.17 in /opt/conda/lib/python3.6/site-packages (from requests->transformers==3.0.2) (2019.11.28)\nRequirement already satisfied: chardet<3.1.0,>=3.0.2 in /opt/conda/lib/python3.6/site-packages (from requests->transformers==3.0.2) (3.0.4)\nRequirement already satisfied: click in /opt/conda/lib/python3.6/site-packages (from sacremoses->transformers==3.0.2) (7.1.1)\nRequirement already satisfied: joblib in /opt/conda/lib/python3.6/site-packages (from sacremoses->transformers==3.0.2) (0.14.1)\n",
+          "output_type": "stream"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "token = BertTokenizer.from_pretrained(\"./tokenizer\")"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T02:01:01.945756Z",
+          "iopub.execute_input": "2021-11-28T02:01:01.946077Z",
+          "iopub.status.idle": "2021-11-28T02:01:01.993099Z",
+          "shell.execute_reply.started": "2021-11-28T02:01:01.946047Z",
+          "shell.execute_reply": "2021-11-28T02:01:01.992300Z"
+        },
+        "trusted": true,
+        "id": "z3QXSdUm4i9z"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "from transformers import BertModel\n",
+        "r_model = BertForSequenceClassification.from_pretrained(\"bert-base-uncased\", num_labels=6)\n",
+        "r_model.load_state_dict(torch.load(\"./fineTuneModel.bin\"))"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T02:01:03.665109Z",
+          "iopub.execute_input": "2021-11-28T02:01:03.665390Z",
+          "iopub.status.idle": "2021-11-28T02:01:07.489497Z",
+          "shell.execute_reply.started": "2021-11-28T02:01:03.665361Z",
+          "shell.execute_reply": "2021-11-28T02:01:07.488604Z"
+        },
+        "trusted": true,
+        "id": "kQ5YsYIs4i9z",
+        "outputId": "65dc1265-71d0-4dff-af07-20954a447dc2"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "execution_count": 93,
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": "<All keys matched successfully>"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        ""
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T02:11:35.160552Z",
+          "iopub.execute_input": "2021-11-28T02:11:35.160841Z",
+          "iopub.status.idle": "2021-11-28T02:11:35.168323Z",
+          "shell.execute_reply.started": "2021-11-28T02:11:35.160811Z",
+          "shell.execute_reply": "2021-11-28T02:11:35.167504Z"
+        },
+        "trusted": true,
+        "id": "-0ocWpuv4i90"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "seq.size()\n"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T02:09:10.196787Z",
+          "iopub.execute_input": "2021-11-28T02:09:10.197088Z",
+          "iopub.status.idle": "2021-11-28T02:09:10.203357Z",
+          "shell.execute_reply.started": "2021-11-28T02:09:10.197060Z",
+          "shell.execute_reply": "2021-11-28T02:09:10.202561Z"
+        },
+        "trusted": true,
+        "id": "iIM6y9Av4i90",
+        "outputId": "42085f0a-3fc9-4053-d93f-da10041c291e"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "execution_count": 99,
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": "torch.Size([1, 256])"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "attention.size()"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T01:56:41.513396Z",
+          "iopub.execute_input": "2021-11-28T01:56:41.513670Z",
+          "iopub.status.idle": "2021-11-28T01:56:41.519059Z",
+          "shell.execute_reply.started": "2021-11-28T01:56:41.513641Z",
+          "shell.execute_reply": "2021-11-28T01:56:41.518275Z"
+        },
+        "trusted": true,
+        "id": "ubl-2MWW4i91",
+        "outputId": "564abed0-e9a0-402e-dd15-671e31f27d4f"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "execution_count": 76,
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": "torch.Size([256])"
+          },
+          "metadata": {}
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        ""
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T01:58:19.903507Z",
+          "iopub.execute_input": "2021-11-28T01:58:19.903842Z",
+          "iopub.status.idle": "2021-11-28T01:58:28.279511Z",
+          "shell.execute_reply.started": "2021-11-28T01:58:19.903795Z",
+          "shell.execute_reply": "2021-11-28T01:58:28.278743Z"
+        },
+        "trusted": true,
+        "id": "55NpLUBX4i91",
+        "outputId": "438aef14-bc3b-4350-e69b-25382d3c3ba3"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "name": "stdout",
+          "text": "Collecting transformers==3.0.2\n  Downloading transformers-3.0.2-py3-none-any.whl (769 kB)\n\u001b[K     |████████████████████████████████| 769 kB 891 kB/s eta 0:00:01\n\u001b[?25hRequirement already satisfied: tqdm>=4.27 in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (4.42.0)\nRequirement already satisfied: dataclasses; python_version < \"3.7\" in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (0.7)\nRequirement already satisfied: sacremoses in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (0.0.38)\nRequirement already satisfied: filelock in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (3.0.12)\nCollecting tokenizers==0.8.1.rc1\n  Downloading tokenizers-0.8.1rc1-cp36-cp36m-manylinux1_x86_64.whl (3.0 MB)\n\u001b[K     |████████████████████████████████| 3.0 MB 44.8 MB/s eta 0:00:01\n\u001b[?25hRequirement already satisfied: packaging in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (20.3)\nRequirement already satisfied: sentencepiece!=0.1.92 in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (0.1.85)\nRequirement already satisfied: regex!=2019.12.17 in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (2020.2.20)\nRequirement already satisfied: numpy in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (1.18.2)\nRequirement already satisfied: requests in /opt/conda/lib/python3.6/site-packages (from transformers==3.0.2) (2.22.0)\nRequirement already satisfied: joblib in /opt/conda/lib/python3.6/site-packages (from sacremoses->transformers==3.0.2) (0.14.1)\nRequirement already satisfied: click in /opt/conda/lib/python3.6/site-packages (from sacremoses->transformers==3.0.2) (7.1.1)\nRequirement already satisfied: six in /opt/conda/lib/python3.6/site-packages (from sacremoses->transformers==3.0.2) (1.14.0)\nRequirement already satisfied: pyparsing>=2.0.2 in /opt/conda/lib/python3.6/site-packages (from packaging->transformers==3.0.2) (2.4.6)\nRequirement already satisfied: chardet<3.1.0,>=3.0.2 in /opt/conda/lib/python3.6/site-packages (from requests->transformers==3.0.2) (3.0.4)\nRequirement already satisfied: urllib3!=1.25.0,!=1.25.1,<1.26,>=1.21.1 in /opt/conda/lib/python3.6/site-packages (from requests->transformers==3.0.2) (1.24.3)\nRequirement already satisfied: certifi>=2017.4.17 in /opt/conda/lib/python3.6/site-packages (from requests->transformers==3.0.2) (2019.11.28)\nRequirement already satisfied: idna<2.9,>=2.5 in /opt/conda/lib/python3.6/site-packages (from requests->transformers==3.0.2) (2.8)\nInstalling collected packages: tokenizers, transformers\n  Attempting uninstall: tokenizers\n    Found existing installation: tokenizers 0.5.2\n    Uninstalling tokenizers-0.5.2:\n      Successfully uninstalled tokenizers-0.5.2\n  Attempting uninstall: transformers\n    Found existing installation: transformers 2.7.0\n    Uninstalling transformers-2.7.0:\n      Successfully uninstalled transformers-2.7.0\nSuccessfully installed tokenizers-0.8.1rc1 transformers-3.0.2\n",
+          "output_type": "stream"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "sent = \"she is not happy\"\n",
+        "seq = token.encode(sent, add_special_tokens=True,max_length=MAX_LEN,pad_to_max_length=True)\n",
+        "attention = [float(i>0) for i in seq]\n",
+        "seq = torch.tensor([seq]).to(device)\n",
+        "attention = torch.tensor([attention]).to(device)"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T02:14:01.661337Z",
+          "iopub.execute_input": "2021-11-28T02:14:01.661610Z",
+          "iopub.status.idle": "2021-11-28T02:14:01.668128Z",
+          "shell.execute_reply.started": "2021-11-28T02:14:01.661583Z",
+          "shell.execute_reply": "2021-11-28T02:14:01.667381Z"
+        },
+        "trusted": true,
+        "id": "zTFwkSLY4i91"
+      },
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "result = model(seq, attention)\n",
+        "    #le.categories_[0] = ['anger' 'fear' 'joy' 'love' 'sadness' 'surprise']\n",
+        "print(result)\n",
+        "# le = preprocessing.OneHotEncoder()\n",
+        "# result = pd.DataFrame(dict(zip(list(le.categories_[0]), [round(x*100, 2)for x in result[0]])).items(), columns = ['Category', 'Confidence'])\n",
+        "# plot_result(result)\n",
+        "# return result"
+      ],
+      "metadata": {
+        "execution": {
+          "iopub.status.busy": "2021-11-28T02:14:04.267676Z",
+          "iopub.execute_input": "2021-11-28T02:14:04.268015Z",
+          "iopub.status.idle": "2021-11-28T02:14:04.292112Z",
+          "shell.execute_reply.started": "2021-11-28T02:14:04.267982Z",
+          "shell.execute_reply": "2021-11-28T02:14:04.291464Z"
+        },
+        "trusted": true,
+        "id": "6vgHtXDK4i92",
+        "outputId": "72510c94-f586-44a7-bcd0-7563bc6ba3c4"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "name": "stdout",
+          "text": "(tensor([[ 0.0865, -2.3902,  5.2393, -2.4124, -0.3744, -2.3875]],\n       device='cuda:0', grad_fn=<AddmmBackward>),)\n",
+          "output_type": "stream"
+        }
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "label2int = {\n",
+        "  \"sadness\": 4,\n",
+        "  \"joy\": 2,\n",
+        "  \"anger\": 0,\n",
+        "  \"fear\": 1,\n",
+        "  \"surprise\": 5,\n",
+        "  \"love\": 3\n",
+        "}"
+      ],
+      "metadata": {
+        "id": "g4VJqKCn4i92"
+      },
+      "execution_count": null,
+      "outputs": []
+    }
+  ]
+}
